@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fix Admin Role</title>
+</head>
+<body>
+  <h1>Fix Admin Role in Firestore</h1>
+  <button id="fixAdmin">Fix Admin Role for admin@artgallery.pk</button>
+  <div id="result"></div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    // Your Firebase config (copy from firebase.ts)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCQNRPqJrZY67llZSdlMZ5-Aubn9LMlqq4",
+      authDomain: "artgallery-175dc.firebaseapp.com",
+      projectId: "artgallery-175dc",
+      storageBucket: "artgallery-175dc.firebasestorage.app",
+      messagingSenderId: "965390317112",
+      appId: "1:965390317112:web:52dc8e1d9d4703a1cc98cd",
+      measurementId: "G-8RG7N2SEEP"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    document.getElementById('fixAdmin').addEventListener('click', async () => {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = 'Processing...';
+
+      try {
+        // Sign in as admin
+        const userCredential = await signInWithEmailAndPassword(auth, 'admin@artgallery.pk', 'SuperSecret123!');
+        const user = userCredential.user;
+
+        console.log('✅ Signed in as:', user.email);
+
+        // Check if user document exists
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          console.log('📄 User document exists:', userDoc.data());
+        } else {
+          console.log('📄 User document does NOT exist, creating...');
+        }
+
+        // Create/Update user document with admin role
+        await setDoc(userDocRef, {
+          uid: user.uid,
+          email: user.email,
+          displayName: 'Admin User',
+          name: 'Admin User',
+          role: 'admin',
+          createdAt: new Date(),
+          disabled: false
+        }, { merge: true });
+
+        console.log('✅ Admin role set successfully!');
+        resultDiv.innerHTML = `
+          <h2 style="color: green;">✅ Success!</h2>
+          <p>Admin role has been set for ${user.email}</p>
+          <p>User ID: ${user.uid}</p>
+          <p><strong>Now you can close this tab and login to admin dashboard!</strong></p>
+        `;
+
+        // Sign out
+        await auth.signOut();
+      } catch (error) {
+        console.error('❌ Error:', error);
+        resultDiv.innerHTML = `<h2 style="color: red;">❌ Error: ${error.message}</h2>`;
+      }
+    });
+  </script>
+</body>
+</html>
